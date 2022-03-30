@@ -225,23 +225,35 @@ struct Args
     #[clap(short = 'c', long)]
     node_color: Option<String>,
 
-    /// branch color, a string in ["white", "red", "green", ...] or an RGB triple like "255,255,0"
+    /// Branch color, a string in ["white", "red", "green", ...] or an RGB triple like "255,255,0"
     #[clap(short, long)]
     branch_color: Option<String>,
 
-    /// node background color, a string in ["white", "red", "green", ...] or an RGB triple like "255,255,0"
+    /// Node background color, a string in ["white", "red", "green", ...] or an RGB triple like "255,255,0"
     #[clap(short = 'g', long)]
     background: Option<String>,
 
-    /// show pid
+    /// Indentation size. The default value is 3.
+    #[clap(short = 'I', long)]
+    pub indent: Option<usize>,
+
+    /// Padding size. The default value is 1.
+    #[clap(short = 'P', long)]
+    pub padding: Option<usize>,
+
+    /// Use ASCII characters to draw the tree.
+    #[clap(short = 'A', long)]
+    ascii: bool,
+
+    /// Show PIDs
     #[clap(short = 'p', long)]
     show_pid: bool,
 
-    /// remove the duplicated leaf node 
+    /// Remove the duplicated leaf node 
     #[clap(short, long)]
     unique: bool,
 
-    /// show the process tree rooted on a specific pid
+    /// Draw the process tree rooted on a specific PID
     #[clap(short, long, default_value = "0")]
     root_pid: u32,
 
@@ -292,8 +304,23 @@ fn parse_config(args: Args) -> PsTreePrintConfig
     config.show_pid = args.show_pid;
     config.root_pid = args.root_pid;
 
+    if args.ascii {
+        config.print_config.characters.down = String::from("|");
+        config.print_config.characters.right = String::from("-");
+        config.print_config.characters.down_and_right = String::from("|");
+        config.print_config.characters.turn_right = String::from("`");
+    }
+
     if let Some(val) = args.depth {
         config.print_config.depth = val;
+    }
+
+    if let Some(val) = args.indent {
+        config.print_config.indent = val;
+    }
+
+    if let Some(val) = args.padding {
+        config.print_config.padding = val;
     }
 
     return config;
