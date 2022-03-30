@@ -47,7 +47,6 @@ struct ProcessNode
 struct PsTreePrintConfig
 {
     show_pid: bool,
-    unique: bool,
     root_pid: u32,
     print_config: PrintConfig,
 }
@@ -97,6 +96,21 @@ impl ProcessTree
         let tree = tree_builder.build();
         let _ = ptree::print_tree_with(&tree, &config.print_config);
     }
+
+    pub fn filter_unique(&mut self)
+    {
+        let mut stack: Vec<ProcessNodeRef> = vec![Rc::clone(&self.root)];
+
+        while !stack.is_empty() {
+            let node_ref = stack.pop().unwrap();
+            node_ref.borrow_mut().children.dedup_by(|p1, p2| {
+                p1.borrow().children.len() == 0 && 
+                p1.borrow().children.len() == 0 && 
+                p1.borrow().proc_info.name == p2.borrow().proc_info.name
+            });
+            node_ref.borrow().children.iter().for_each(|child| stack.push(Rc::clone(child)));
+        }
+    }
 }
 
 impl ProcessNode 
@@ -134,7 +148,6 @@ impl PsTreePrintConfig
         PsTreePrintConfig 
         { 
             show_pid: false,
-            unique: false,
             root_pid: 0,
             print_config: PrintConfig::default(),
         }
@@ -277,7 +290,6 @@ fn parse_config(args: Args) -> PsTreePrintConfig
     config.print_config.branch.foreground = args.branch_color.and_then(|color_str| parse_color(&color_str));
 
     config.show_pid = args.show_pid;
-    config.unique = args.unique;
     config.root_pid = args.root_pid;
 
     if let Some(val) = args.depth {
@@ -291,6 +303,7 @@ fn main()
 {
     let ps_info = get_process_info();
     let args = Args::parse();
-    let pstree = treefy_proc(ps_info, args.root_pid);
+    let mut pstree = treefy_proc(ps_info, args.root_pid);
+    args.unique.then(|| pstree.filter_unique());
     pstree.print(&parse_config(args));
 }
